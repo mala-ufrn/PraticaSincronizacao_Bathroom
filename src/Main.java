@@ -12,7 +12,7 @@ public class Main {
 				.setBathCapacity(BATH_CAPACITY)
 				.build();
 
-		System.out.println(bath.getBathList().get(0).whosThere());
+		System.out.println(bath.getToiletList().get(0).whosThere());
 		
 	}
 

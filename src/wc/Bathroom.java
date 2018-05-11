@@ -12,14 +12,14 @@ import wc.utils.Toilet;
  */
 public final class Bathroom {
 
-	private List<Toilet> bathList;
+	private List<Toilet> toiletList;
 
 	public Bathroom(int capacity) {
-		bathList = new ArrayList<Toilet>(capacity);
+		toiletList = new ArrayList<Toilet>(capacity);
 	}
 
-	public List<Toilet> getBathList() {
-		return bathList;
+	public List<Toilet> getToiletList() {
+		return toiletList;
 	}
 
 	/**
@@ -45,7 +45,7 @@ public final class Bathroom {
 			Bathroom bath = new Bathroom(this.bathCapacity);
 			
 			for (int i = 0; i < bathCapacity; i++)
-				bath.getBathList().add(Toilet.EMPTY);
+				bath.getToiletList().add(Toilet.EMPTY);
 			
 			return bath;
 		}
