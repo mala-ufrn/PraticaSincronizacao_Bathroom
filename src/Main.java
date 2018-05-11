@@ -9,7 +9,7 @@ public class Main {
 	public static void main(String[] args) {
 		
 		Bathroom bath = new Bathroom.Builder()
-				.setBathCapacity(10)
+				.setBathCapacity(BATH_CAPACITY)
 				.build();
 
 		System.out.println(bath.getBathList().get(0).whosThere());
