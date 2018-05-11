@@ -45,7 +45,7 @@ public final class Bathroom {
 			Bathroom bath = new Bathroom(this.bathCapacity);
 			
 			for (int i = 0; i < bathCapacity; i++)
-				bath.getBathList().add(Toilet.FEMALE);
+				bath.getBathList().add(Toilet.EMPTY);
 			
 			return bath;
 		}
