@@ -4,10 +4,10 @@ import java.util.Optional;
 
 public class Toilet {
 
-	private Optional<Boolean> whoIs;
+	private Person user;
 
-	private Toilet(Optional<Boolean> user) {
-		this.whoIs = user;
+	public Toilet(Person user) {
+		this.user = user;
 	}
 
 	/**
@@ -16,12 +16,8 @@ public class Toilet {
 	 * @return
 	 */
 	public String whosThere() {
-		if (whoIs.equals(MALE.whoIs)) {
-			return "MALE";
-		} else if (whoIs.equals(FEMALE.whoIs)) {
-			return "FEMALE";
-		}
-		return "EMPTY";
+
+		return user.toString();
 	}
 
 	/**
@@ -29,24 +25,33 @@ public class Toilet {
 	 * 
 	 * @param person
 	 */
-	public void enterToilet(Boolean person) {
-		this.whoIs = Optional.of(person);
+	public void enterToilet(Person person) {
+		this.user = person;
 	}
 
-	public Boolean exitToilet() throws ToiletException {
+	public Person exitToilet() throws ToiletException {
 
-		if (whoIs.equals(EMPTY.whoIs)) {
-			throw new ToiletException("The bathroom is empty, so it is not possible to be emptier than it is already =( kill me please..");
+		if (user.equals(Person.EMPTY)) {
+			throw new ToiletException(
+					"The bathroom is empty, so it is not possible to be emptier than it is already =( kill me please..");
 		}
-		
-		Boolean aux = this.whoIs.get();
-		this.whoIs = EMPTY.whoIs;
+
+		Person aux = this.user;
+		this.user = Person.EMPTY;
 
 		return aux;
 	}
 
-	public static final Toilet MALE = new Toilet(Optional.of(true));
-	public static final Toilet FEMALE = new Toilet(Optional.of(false));
-	public static final Toilet EMPTY = new Toilet(Optional.empty());
+	public Person getUser() {
+		return user;
+	}
+	
+	
+	public String toString(){
+		return user.toString();
+	}
+
+
+	
 
 }

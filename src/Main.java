@@ -1,4 +1,5 @@
 import wc.Bathroom;
+import wc.utils.Person;
 
 public class Main {
 	
@@ -11,8 +12,10 @@ public class Main {
 		Bathroom bath = new Bathroom.Builder()
 				.setBathCapacity(BATH_CAPACITY)
 				.build();
-
-		System.out.println(bath.getToiletList().get(0).whosThere());
+		
+		bath.getToiletList().get(5).enterToilet(Person.MALE);
+		bath.getOccupancy();
+		bath.atThisMoment();
 		
 	}
 
