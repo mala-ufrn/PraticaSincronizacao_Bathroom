@@ -7,12 +7,13 @@ import wc.utils.Person;
 import wc.utils.Toilet;
 
 /**
- * Office Bathroon Class, detain all toilets
+ * Office Bathroon Class, detain all biombos.
  * 
  * @author paulo
  *
  */
 public final class Bathroom {
+	
 	int occupancy = 0;
 	private List<Toilet> toiletList;
 
@@ -31,7 +32,7 @@ public final class Bathroom {
 			.filter(a -> a.getUser() != Person.EMPTY)
 			.forEach(a -> occupancy++);
 
-		System.out.println("Currently the total occupancy is: " + occupancy);
+		System.out.println("Currently the total occupancy is: " + occupancy + "/" +this.getToiletList().size());
 		
 		return occupancy;
 	}
