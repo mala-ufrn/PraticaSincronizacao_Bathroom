@@ -3,6 +3,7 @@ package wc;
 import java.util.ArrayList;
 import java.util.List;
 
+import wc.utils.Gender;
 import wc.utils.Person;
 import wc.utils.Toilet;
 
@@ -12,35 +13,68 @@ import wc.utils.Toilet;
  * @author paulo
  *
  */
-public final class Bathroom {
+public class Bathroom {
 	
-	int occupancy = 0;
-	private List<Toilet> toiletList;
+	private final int bathCapacity;
+	private List<Person> usersList;
+	private List<Person> waitingList;
 
-	public Bathroom(int capacity) {
-		toiletList = new ArrayList<Toilet>(capacity);
+	private static Bathroom bath;
+
+	private Bathroom(int capacity, int waitingListCapacity) {
+		this.bathCapacity = capacity;
+		this.waitingList = new ArrayList<>(waitingListCapacity);
+		this.usersList = new ArrayList<>(capacity);
 	}
 
-	public List<Toilet> getToiletList() {
-		return toiletList;
-	}
-
-	public int getOccupancy() {
-		occupancy = 0;
-
-		this.getToiletList().stream()
-			.filter(a -> a.getUser() != Person.EMPTY)
-			.forEach(a -> occupancy++);
-
-		System.out.println("Currently the total occupancy is: " + occupancy + "/" +this.getToiletList().size());
+	public long getOccupancy() {
+		long aux = this.getUsersList().stream()
+			.filter(a -> a.getGender() != Gender.EMPTY).count();
+			
 		
-		return occupancy;
+		System.out.println("Currently the total occupancy is: " + aux + "/" +this.getUsersList().size());
+		return aux;
+	}
+	
+	
+	public void addUser(Person p){
+		usersList.add(p);
+	}
+	
+	public Boolean isPersonThere(Person p){
+		return usersList.contains(p);
+	}
+	
+
+	public void removePerson(Person person) {
+		usersList.remove(person);
 	}
 
-	public void atThisMoment() {
 
-		this.getToiletList().forEach(System.out::println);
+	public List<Person> getUsersList() {
+		return usersList;
 	}
+
+	public List<Person> getWaitingList() {
+		return waitingList;
+	}
+
+	public static Bathroom getBath() {
+		return bath;
+	}
+
+	public int getBathCapacity() {
+		return bathCapacity;
+	}
+	
+	public static Bathroom getInstance(){
+		if (bath == null){
+			bath = Builder.build();
+		}
+		return bath;
+	}
+	
+	
 
 	/**
 	 * Bathroom Builder if the bathroom increases in attributes, just put these
@@ -51,10 +85,16 @@ public final class Bathroom {
 	 */
 	public static class Builder {
 
-		private int bathCapacity;
+		private static int bathCapacity;
+		private static int queueCapacity;
 
 		public Builder setBathCapacity(int capacity) {
 			this.bathCapacity = capacity;
+			return this;
+		}
+
+		public Builder setQueueCapacity(int qCapacity) {
+			this.queueCapacity = qCapacity;
 			return this;
 		}
 
@@ -63,14 +103,18 @@ public final class Bathroom {
 		 * 
 		 * @return
 		 */
-		public Bathroom build() {
-			Bathroom bath = new Bathroom(this.bathCapacity);
-
-			for (int i = 0; i < bathCapacity; i++)
-				bath.getToiletList().add(new Toilet(Person.EMPTY));
-
+		public static Bathroom build() {
+			if (bath == null) {
+				synchronized (Bathroom.class) {
+					if (bath == null) {
+						bath = new Bathroom(bathCapacity, queueCapacity);
+					}
+				}
+			}
 			return bath;
 		}
 	}
+
+	
 
 }
