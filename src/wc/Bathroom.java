@@ -2,9 +2,10 @@ package wc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Semaphore;
-import java.util.stream.Collectors;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import wc.utils.Gender;
 import wc.utils.Person;
@@ -16,6 +17,10 @@ import wc.utils.Person;
  */
 public class Bathroom {
     private Semaphore semaphore = new Semaphore(1);
+    private final Lock lock = new ReentrantLock();
+    final Condition notMale = lock.newCondition();
+    final Condition notFemale = lock.newCondition();
+    
 
     private final int bathCapacity;
     private List<Person> usersList;
@@ -29,7 +34,7 @@ public class Bathroom {
         this.usersList = new ArrayList<>(capacity);
     }
 
-    public long getOccupancy() {
+    public synchronized long getOccupancy() {
         System.out.println("[" + Thread.currentThread().getName() + "] Currently the occupancy is: " + usersList.size() + "/" + bathCapacity);
         return usersList.size();
     }
@@ -44,14 +49,37 @@ public class Bathroom {
      * @param p
      */
     public void addUser(Person p) {
-        if(bathCapacity > usersList.size()){
+    	lock.lock();
+    	try {
+    		while (bathCapacity > usersList.size() && accessProvider().equals(p.getGender()) || usersList.isEmpty()){
+    			if (p.getGender().equals(Gender.MALE)){
+    				notFemale.await();
+    				waitingList.add(p);
+    			} else {
+    				notMale.await();
+    				waitingList.add(p);
+    			}
+    		}
+    		notMale.signal();
+    		notFemale.signal();
+    	} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+    		lock.unlock();
+    	}
+    	 
+    	
+    	if(bathCapacity > usersList.size()){
             usersList.add(p);
-            System.out.println(p.getName() + " enters in the bath.");
+            System.out.println(Thread.currentThread().getName() + " enters in the bath.");
         }else {
-            System.out.println(p.getName() + " The bath is totally occuped.");
+            System.out.println(Thread.currentThread().getName() + " The bath is totally occuped.");
         }
-
-
+    }
+    
+    private Gender accessProvider(){
+    	return (usersList.stream().filter(a -> a.getGender() == Gender.MALE).count() > 0) ? Gender.MALE : Gender.FEMALE;
     }
 
 
@@ -77,17 +105,13 @@ public class Bathroom {
         return waitingList;
     }
 
-    public static Bathroom getBath() {
-        return bath;
-    }
-
     public int getBathCapacity() {
         return bathCapacity;
     }
 
     public static Bathroom getInstance() {
         if (bath == null) {
-            bath = Builder.build();
+            bath = new Bathroom.Builder().build();
         }
         return bath;
     }
@@ -99,18 +123,20 @@ public class Bathroom {
      *
      * @author paulo
      */
+    @SuppressWarnings("static-access")
     public static class Builder {
 
-        private static int bathCapacity;
-        private static int queueCapacity;
-
+        private static int capacity;
+        private static int qCapacity;
+        
         public Builder setBathCapacity(int capacity) {
-            this.bathCapacity = capacity;
+            this.capacity = capacity;
             return this;
         }
-
-        public Builder setQueueCapacity(int qCapacity) {
-            this.queueCapacity = qCapacity;
+        
+        
+		public Builder setQueueCapacity(int qCapacity) {
+            this.qCapacity = qCapacity;
             return this;
         }
 
@@ -119,11 +145,11 @@ public class Bathroom {
          *
          * @return
          */
-        public static Bathroom build() {
+        public Bathroom build() {
             if (bath == null) {
                 synchronized (Bathroom.class) {
                     if (bath == null) {
-                        bath = new Bathroom(bathCapacity, queueCapacity);
+                        bath = new Bathroom(capacity, qCapacity);
                     }
                 }
             }

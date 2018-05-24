@@ -48,7 +48,7 @@ public class Person extends Thread {
     private void requiresToilet() {
 
         System.out.println("[" + this.getName() + "] - May I use the bath for " + timeRequest + " seconds?");
-        Bathroom bath = Bathroom.getBath();
+        Bathroom bath = Bathroom.getInstance();
         try {
             bath.getSemaphore().acquire();
 
@@ -66,10 +66,10 @@ public class Person extends Thread {
 
     private void useToilet() {
         System.out.println("[" + this.getName() + "] - I am peeing. Lets Rock!");
-        Bathroom bath = Bathroom.getBath();
+        Bathroom bath = Bathroom.getInstance();
         while (!bath.isPersonThere(this)) {
             try {
-                sleep(timeRequest);
+                sleep((timeRequest));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -79,7 +79,7 @@ public class Person extends Thread {
 
     private void exitToilet() {
         System.out.println("[" + this.getName() + "] - Finished.");
-        Bathroom bath = Bathroom.getBath();
+        Bathroom bath = Bathroom.getInstance();
         try {
             bath.getSemaphore().acquire();
             bath.removePerson(this);
