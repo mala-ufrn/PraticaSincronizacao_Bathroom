@@ -1,7 +1,7 @@
 package wc.utils;
 
 public enum Gender {
-	MALE("male"), FEMALE("female"), EMPTY("empty");
+	MALE("male"), FEMALE("female");
 	
 	private final String gender;
 
