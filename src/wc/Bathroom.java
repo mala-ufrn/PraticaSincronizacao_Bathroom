@@ -2,6 +2,8 @@ package wc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -16,146 +18,145 @@ import wc.utils.Person;
  * @author paulo
  */
 public class Bathroom {
-    private Semaphore semaphore = new Semaphore(1);
-    private final Lock lock = new ReentrantLock();
-    final Condition notMale = lock.newCondition();
-    final Condition notFemale = lock.newCondition();
-    
+	private Semaphore semaphore = new Semaphore(1);
+	
+	private final int bathCapacity;
+	private List<Person> usersList;
+	private Queue<Person> maleWaitingList = new PriorityQueue<>();
+	private Queue<Person> femaleWaitingList = new PriorityQueue<>();
 
-    private final int bathCapacity;
-    private List<Person> usersList;
-    private List<Person> waitingList;
+	private static Bathroom bath;
 
-    private static Bathroom bath;
+	private Bathroom(int capacity, int waitingListCapacity) {
+		this.bathCapacity = capacity;
+		this.usersList = new ArrayList<>(capacity);
+	}
 
-    private Bathroom(int capacity, int waitingListCapacity) {
-        this.bathCapacity = capacity;
-        this.waitingList = new ArrayList<>(waitingListCapacity);
-        this.usersList = new ArrayList<>(capacity);
-    }
+	public synchronized long getOccupancy() {
+		System.out.println("[" + Thread.currentThread().getName() + "] Currently the occupancy is: " + usersList.size()
+				+ "/" + bathCapacity);
+		return usersList.size();
+	}
 
-    public synchronized long getOccupancy() {
-        System.out.println("[" + Thread.currentThread().getName() + "] Currently the occupancy is: " + usersList.size() + "/" + bathCapacity);
-        return usersList.size();
-    }
+	public Semaphore getSemaphore() {
+		return semaphore;
+	}
 
-    public Semaphore getSemaphore() {
-        return semaphore;
-    }
+	/**
+	 * Here we must insert smart blocks to see if one person could enter
+	 *
+	 * @param p
+	 */
+	public Boolean addUser(Person p) {
 
-    /**
-     * Here we must insert smart blocks to see if one person could enter
-     *
-     * @param p
-     */
-    public void addUser(Person p) {
-    	lock.lock();
-    	try {
-    		while (bathCapacity > usersList.size() && accessProvider().equals(p.getGender()) || usersList.isEmpty()){
-    			if (p.getGender().equals(Gender.MALE)){
-    				notFemale.await();
-    				waitingList.add(p);
-    			} else {
-    				notMale.await();
-    				waitingList.add(p);
-    			}
-    		}
-    		notMale.signal();
-    		notFemale.signal();
-    	} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
+		if ( (p.getGender().equals(accessGenderProvider()) && usersList.size() < bathCapacity ) || usersList.size() == 0 ) {
+			usersList.add(p);
+			System.out.println(p.getName() + " enters in the bath.");
+			return true;
+		}
+		return false;
+	}
+
+	private Gender accessGenderProvider() {
+		return (usersList.stream().filter(a -> a.getGender() == Gender.MALE).count() > 0) ? Gender.MALE : Gender.FEMALE;
+	}
+
+	public Boolean isPersonThere(Person p) {
+
+		try {
+			semaphore.acquire();
+			return usersList.contains(p);
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} finally {
-    		lock.unlock();
-    	}
-    	 
-    	
-    	if(bathCapacity > usersList.size()){
-            usersList.add(p);
-            System.out.println(Thread.currentThread().getName() + " enters in the bath.");
-        }else {
-            System.out.println(Thread.currentThread().getName() + " The bath is totally occuped.");
-        }
-    }
-    
-    private Gender accessProvider(){
-    	return (usersList.stream().filter(a -> a.getGender() == Gender.MALE).count() > 0) ? Gender.MALE : Gender.FEMALE;
-    }
+			semaphore.release();
+		}
 
+		return false;
 
-    public Boolean isPersonThere(Person p) {
+	}
 
-        return usersList.contains(p);
+	public void removePerson(Person person) {
+		usersList.remove(person);
+		System.out.println(person.getName() + " goes out");
+	}
 
-    }
+	public void warnWaitngQueue(Gender gender) {
+		if (usersList.isEmpty()) {
+			if (gender.equals(Gender.MALE)) {
+				while (femaleWaitingList.size() > 0 && addUser(femaleWaitingList.poll())) {
 
+				}
+			} else {
 
-    public void removePerson(Person person) {
-        usersList.remove(person);
-        System.out.println(person.getName() + " goes out");
+				while (maleWaitingList.size() > 0 && addUser(maleWaitingList.remove())) {
 
-    }
+				}
+			}
+		}
 
+	}
 
-    public List<Person> getUsersList() {
-        return usersList;
-    }
+	public List<Person> getUsersList() {
+		return usersList;
+	}
 
-    public List<Person> getWaitingList() {
-        return waitingList;
-    }
+	public int getBathCapacity() {
+		return bathCapacity;
+	}
 
-    public int getBathCapacity() {
-        return bathCapacity;
-    }
+	public Queue<Person> getMaleWaitingList() {
+		return maleWaitingList;
+	}
 
-    public static Bathroom getInstance() {
-        if (bath == null) {
-            bath = new Bathroom.Builder().build();
-        }
-        return bath;
-    }
+	public Queue<Person> getFemaleWaitingList() {
+		return femaleWaitingList;
+	}
 
+	public static Bathroom getInstance() {
+		if (bath == null) {
+			bath = new Bathroom.Builder().build();
+		}
+		return bath;
+	}
 
-    /**
-     * Bathroom Builder if the bathroom increases in attributes, just put these
-     * here.
-     *
-     * @author paulo
-     */
-    @SuppressWarnings("static-access")
-    public static class Builder {
+	/**
+	 * Bathroom Builder if the bathroom increases in attributes, just put these
+	 * here.
+	 *
+	 * @author paulo
+	 */
+	@SuppressWarnings("static-access")
+	public static class Builder {
 
-        private static int capacity;
-        private static int qCapacity;
-        
-        public Builder setBathCapacity(int capacity) {
-            this.capacity = capacity;
-            return this;
-        }
-        
-        
+		private static int capacity;
+		private static int qCapacity;
+
+		public Builder setBathCapacity(int capacity) {
+			this.capacity = capacity;
+			return this;
+		}
+
 		public Builder setQueueCapacity(int qCapacity) {
-            this.qCapacity = qCapacity;
-            return this;
-        }
+			this.qCapacity = qCapacity;
+			return this;
+		}
 
-        /**
-         * starts a Bathroom with empty toilets
-         *
-         * @return
-         */
-        public Bathroom build() {
-            if (bath == null) {
-                synchronized (Bathroom.class) {
-                    if (bath == null) {
-                        bath = new Bathroom(capacity, qCapacity);
-                    }
-                }
-            }
-            return bath;
-        }
-    }
-
+		/**
+		 * starts a Bathroom with empty toilets
+		 *
+		 * @return
+		 */
+		public Bathroom build() {
+			if (bath == null) {
+				synchronized (Bathroom.class) {
+					if (bath == null) {
+						bath = new Bathroom(capacity, qCapacity);
+					}
+				}
+			}
+			return bath;
+		}
+	}
 
 }
