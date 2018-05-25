@@ -5,15 +5,12 @@ import wc.utils.Person;
 public class Main {
 
 
-    public final static int BATH_CAPACITY = 3;
-
+    public final static int BATH_CAPACITY = 2;
 
     public static void main(String[] args) {
-
-
+    	
         Bathroom bath = new Bathroom.Builder()
                 .setBathCapacity(BATH_CAPACITY)
-                .setQueueCapacity(BATH_CAPACITY)
                 .build();
 
         Person p0 = new Person("Cicero", Gender.MALE, 2 * 2);
@@ -44,6 +41,7 @@ public class Main {
         }
 
         bath.getOccupancy();
+        System.exit(-1);
     }
 
 }

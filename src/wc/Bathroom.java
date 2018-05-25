@@ -1,14 +1,16 @@
 package wc;
 
+import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
+import javax.swing.plaf.synth.SynthSeparatorUI;
+
+import wc.utils.BathStatus;
 import wc.utils.Gender;
 import wc.utils.Person;
 
@@ -19,19 +21,25 @@ import wc.utils.Person;
  */
 public class Bathroom {
 	private Semaphore semaphore = new Semaphore(1);
-	
+
 	private final int bathCapacity;
+	private Integer fairness = Integer.MAX_VALUE;
+
 	private List<Person> usersList;
-	private Queue<Person> maleWaitingList = new PriorityQueue<>();
-	private Queue<Person> femaleWaitingList = new PriorityQueue<>();
+	private Queue<Person> maleWaitingList = new ConcurrentLinkedQueue();
+	private Queue<Person> femaleWaitingList = new ConcurrentLinkedQueue();
 
 	private static Bathroom bath;
 
-	private Bathroom(int capacity, int waitingListCapacity) {
+	private Bathroom(int capacity) {
 		this.bathCapacity = capacity;
 		this.usersList = new ArrayList<>(capacity);
 	}
-
+	/**
+	 * Returns the current bathroom's occupancy.
+	 * This method must be synchronized as a guarantee of correctness 
+	 * @return
+	 */
 	public synchronized long getOccupancy() {
 		System.out.println("[" + Thread.currentThread().getName() + "] Currently the occupancy is: " + usersList.size()
 				+ "/" + bathCapacity);
@@ -43,24 +51,48 @@ public class Bathroom {
 	}
 
 	/**
-	 * Here we must insert smart blocks to see if one person could enter
-	 *
+	 * this method inserts blocks of rules for a person to enter the bathroom.
+	 * Basically opposite genders cannot stay inside at the same time, ,
+	 * moreover people can not in if bathroom is full or timerequest is greater than maximun permitted. 
+
 	 * @param p
 	 */
-	public Boolean addUser(Person p) {
+	public BathStatus addUser(Person p) {
 
-		if ( (p.getGender().equals(accessGenderProvider()) && usersList.size() < bathCapacity ) || usersList.size() == 0 ) {
+		if ((p.getGender().equals(accessGenderProvider()) && usersList.size() < bathCapacity
+				&& p.getTimeRequest() <= fairness) || usersList.size() == 0) {
+			fairness = p.getTimeRequest();
+			
 			usersList.add(p);
-			System.out.println(p.getName() + " enters in the bath.");
-			return true;
+			System.out.println("[BATH] - "+p.getName()+ " Gettin." );
+			return BathStatus.SUCCESS;
 		}
-		return false;
+		
+		if (bathCapacity <= usersList.size())
+			return BathStatus.FULL;
+		if (!p.getGender().equals(accessGenderProvider()))
+			return BathStatus.GENDER;
+		if (!(p.getTimeRequest() <= fairness)){
+			System.out.println("[BATH] - Release access for requests less than: " +fairness);
+			return BathStatus.TIME;
+		}
+		
+		return BathStatus.NULL;
 	}
 
+	/**
+	 * Informs the current gender inside the bathroom
+	 * @return
+	 */
 	private Gender accessGenderProvider() {
 		return (usersList.stream().filter(a -> a.getGender() == Gender.MALE).count() > 0) ? Gender.MALE : Gender.FEMALE;
 	}
 
+	/**
+	 * Ask if a person is inside the bath.
+	 * @param p
+	 * @return
+	 */
 	public Boolean isPersonThere(Person p) {
 
 		try {
@@ -75,28 +107,48 @@ public class Bathroom {
 		return false;
 
 	}
-
+	
+	/**
+	 * Removes a Person from bath.
+	 * @param person
+	 */
 	public void removePerson(Person person) {
 		usersList.remove(person);
-		System.out.println(person.getName() + " goes out");
+		System.out.println("[BATH] - "+ person.getName() + " goes out");
 	}
 
+	/**
+	 * Notify the waiting people on queues 
+	 * @param gender
+	 */
 	public void warnWaitngQueue(Gender gender) {
 		if (usersList.isEmpty()) {
 			if (gender.equals(Gender.MALE)) {
-				while (femaleWaitingList.size() > 0 && addUser(femaleWaitingList.poll())) {
+				if (!femaleWaitingList.isEmpty()){
+					while (femaleWaitingList.size() > 0 && addUser(femaleWaitingList.poll()).equals(BathStatus.SUCCESS)) {
 
+					}
+				} else {
+					while (maleWaitingList.size() > 0 && addUser(maleWaitingList.poll()).equals(BathStatus.SUCCESS)) {
+
+					}
 				}
 			} else {
+				if (!maleWaitingList.isEmpty()){
+					while (maleWaitingList.size() > 0 && addUser(maleWaitingList.poll()).equals(BathStatus.SUCCESS)) {
 
-				while (maleWaitingList.size() > 0 && addUser(maleWaitingList.remove())) {
+					}
+				} else {
+					while (femaleWaitingList.size() > 0 && addUser(femaleWaitingList.poll()).equals(BathStatus.SUCCESS)) {
 
+					}
 				}
 			}
 		}
-
 	}
 
+	// Setters and Getters 
+	
 	public List<Person> getUsersList() {
 		return usersList;
 	}
@@ -130,15 +182,9 @@ public class Bathroom {
 	public static class Builder {
 
 		private static int capacity;
-		private static int qCapacity;
-
+		
 		public Builder setBathCapacity(int capacity) {
 			this.capacity = capacity;
-			return this;
-		}
-
-		public Builder setQueueCapacity(int qCapacity) {
-			this.qCapacity = qCapacity;
 			return this;
 		}
 
@@ -151,7 +197,7 @@ public class Bathroom {
 			if (bath == null) {
 				synchronized (Bathroom.class) {
 					if (bath == null) {
-						bath = new Bathroom(capacity, qCapacity);
+						bath = new Bathroom(capacity);
 					}
 				}
 			}

@@ -22,11 +22,6 @@ public class Person extends Thread {
 		this.gender = g;
 	}
 
-	/**
-	 * Set the time the person needs
-	 *
-	 * @param time
-	 */
 	public void setTimeRequest(Integer time) {
 		timeRequest = time;
 	}
@@ -39,6 +34,9 @@ public class Person extends Thread {
 		return timeRequest;
 	}
 
+	/**
+	 * Here are described all actions that this person will execute.
+	 */
 	@Override
 	public void run() {
 		requiresToilet();
@@ -46,16 +44,19 @@ public class Person extends Thread {
 		exitToilet();
 	}
 
+	/**
+	 * Method that indicates the action of requiring entering the bathroom,
+	 */
 	private void requiresToilet() {
 
 		Bathroom bath = Bathroom.getInstance();
 		try {
 			bath.getSemaphore().acquire();
 			System.out.println("[" + this.getName() + "] - May I use the bath for " + timeRequest + " seconds?");
-
-			if (!bath.addUser(this)) {
+			BathStatus status = bath.addUser(this);
+			if (status != BathStatus.SUCCESS) {
 				System.out
-						.println(Thread.currentThread().getName() + " I Can not enter in the bath. I am going to the queue.");
+						.println("[" +Thread.currentThread().getName() + "] - I can not enter in the bath. I am going to the queue because: " + status.getBathAnswer());
 				if (this.getGender().equals(Gender.MALE)) {
 					bath.getMaleWaitingList().add(this);
 				} else {
@@ -70,7 +71,10 @@ public class Person extends Thread {
 		}
 
 	}
-
+	
+	/**
+	 * The act in action. Just it.
+	 */
 	private void useToilet() {
 
 		Bathroom bath = Bathroom.getInstance();
@@ -85,7 +89,11 @@ public class Person extends Thread {
 		System.out.println("[" + this.getName() + "] - Peed.");
 
 	}
-
+	
+	/**
+	 * The user request exit the bathroom, 
+	 * This will trigger a warning for queue
+	 */
 	private void exitToilet() {
 		
 		Bathroom bath = Bathroom.getInstance();

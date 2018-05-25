@@ -1,5 +1,10 @@
 package wc.utils;
 
+/**
+ * Defines the gender of people
+ * @author paulo
+ *
+ */
 public enum Gender {
 	MALE("male"), FEMALE("female");
 	
