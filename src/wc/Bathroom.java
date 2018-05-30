@@ -97,7 +97,33 @@ public class Bathroom {
 	public Boolean isPersonThere(Person p) {
 
 		try {
-			semaphore.acquire();
+			- I can not enter in the bath. I am going to the queue because: Opposite gender in
+			[Lourdes] - May I use the bath for 23 seconds?
+			[BATH] - Release access for time requests less than: 9
+			[Lourdes] - I can not enter in the bath. I am going to the queue because: Time Requested
+			[Joao] - May I use the bath for 7 seconds?
+			[Joao] - I can not enter in the bath. I am going to the queue because: Opposite gender in
+			[Tiago] - May I use the bath for 15 seconds?
+			[Tiago] - I can not enter in the bath. I am going to the queue because: Opposite gender in
+			[Geovanio] - May I use the bath for 1 seconds?
+			[Geovanio] - I can not enter in the bath. I am going to the queue because: Opposite gender in
+			[Hugo] - May I use the bath for 22 seconds?
+			[Hugo] - I can not enter in the bath. I am going to the queue because: Opposite gender in
+			[Maria] - Finished.
+			[BATH] - Maria goes out
+			[Maria] Currently the occupancy is: 0/2
+			[BATH] - Cicero Gettin.
+			[Maria] Currently the occupancy is: 1/2
+			[BATH] - Joao Gettin.
+			[Maria] Currently the occupancy is: 2/2
+			[Joao] - Peed.
+			[Joao] - Finished.
+			[BATH] - Joao goes out
+			[Joao] Currently the occupancy is: 1/2
+			[Cicero] - Peed.
+			[Cicero] - Finished.
+			[BATH] - Cicero goes out
+			[Cicero] Currently the occupancy is: 0/2			semaphore.acquire();
 			return usersList.contains(p);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
