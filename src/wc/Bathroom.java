@@ -53,7 +53,7 @@ public class Bathroom {
 	/**
 	 * this method inserts blocks of rules for a person to enter the bathroom.
 	 * Basically opposite genders cannot stay inside at the same time, ,
-	 * moreover people can not in if bathroom is full or timerequest is greater than maximun permitted. 
+	 * moreover people can not in if bathroom is full or time request is greater than maximun permitted. 
 
 	 * @param p
 	 */
@@ -65,6 +65,7 @@ public class Bathroom {
 			
 			usersList.add(p);
 			System.out.println("[BATH] - "+p.getName()+ " Gettin." );
+			getOccupancy();
 			return BathStatus.SUCCESS;
 		}
 		
@@ -73,7 +74,7 @@ public class Bathroom {
 		if (!p.getGender().equals(accessGenderProvider()))
 			return BathStatus.GENDER;
 		if (!(p.getTimeRequest() <= fairness)){
-			System.out.println("[BATH] - Release access for requests less than: " +fairness);
+			System.out.println("[BATH] - Release access for time requests less than: " +fairness);
 			return BathStatus.TIME;
 		}
 		
@@ -115,6 +116,7 @@ public class Bathroom {
 	public void removePerson(Person person) {
 		usersList.remove(person);
 		System.out.println("[BATH] - "+ person.getName() + " goes out");
+		getOccupancy();
 	}
 
 	/**
